@@ -36,5 +36,5 @@ time seqtk seq -FE toy.fq.gz > /dev/null
 Isa-l's `igzip` program sometimes complains about big concatenated gzip file. I'm not sure whether the issue resists in the above API. **Use at your own risk**.
 
 ## Credits
-<a href="http://github.com/wulj2"><img src="https://avatars.githubusercontent.com/u/37930892?v=4" alt="@wulj2" size="32" height="32" width="32" data-view-component="true" class="avatar circle"></a>
-<a href="http://github.com/bli25"><img src="https://avatars.githubusercontent.com/u/10385559?v=4" alt="@bli25" size="32" height="32" width="32" data-view-component="true" class="avatar circle"></a>
+<a href="http://github.com/wulj2" target="_blank"><img src="https://avatars.githubusercontent.com/u/37930892?v=4" alt="@wulj2" size="32" height="32" width="32" data-view-component="true" class="avatar circle"></a>
+<a href="http://github.com/bli25" target="_blank"><img src="https://avatars.githubusercontent.com/u/10385559?v=4" alt="@bli25" size="32" height="32" width="32" data-view-component="true" class="avatar circle"></a>
