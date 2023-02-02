@@ -33,7 +33,9 @@ time seqtk seq -FE toy.fq.gz > /dev/null
 | Runtime  |  1m18.050s  |  0m23.648s | 3.3×  |
 
 ## Caveats
-Isa-l's `igzip` program sometimes complains about big concatenated gzip file. I'm not sure whether the issue resists in the above API. **Use at your own risk**.
+~~Isa-l's `igzip` program sometimes complains about big concatenated gzip file. I'm not sure whether the issue resists in the above API. **Use at your own risk**.~~
+
+**igzip (version 2.30.0) compiled with newer gcc (gcc version 11.2.1 on my end) works without the aforementioned issue**.
 
 ## Credits
 <a href="http://github.com/wulj2" target="_blank"><img src="https://avatars.githubusercontent.com/u/37930892?v=4" alt="@wulj2" size="32" height="32" width="32" data-view-component="true" class="avatar circle"></a>
