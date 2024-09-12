@@ -349,6 +349,10 @@ char* gzgets(gzFile fp, char *buf, int len)
                 return fgets(buf, len, fp->fp);
             return NULL;
         }
+        if(len > fp->buf_get_size){
+            fp->buf_get_size = 2 * len;
+            fp->buf_get = (char*)realloc(fp->buf_get, 2*len*sizeof(char));
+        }
         uint8_t rd = 0;
         char* pn = NULL;
         do{
@@ -359,12 +363,14 @@ char* gzgets(gzFile fp, char *buf, int len)
                         buf[pn - fp->buf_get + 1] = '\0';
                         fp->buf_get_len -= (pn - fp->buf_get + 1);
                         for(int64_t i = 0; i < fp->buf_get_len; ++i) fp->buf_get[i] = *(pn + 1 + i);
+                        fp->buf_get[fp->buf_get_len] = '\0';
                         rd = 1;
                     }else{
                         memcpy(buf, fp->buf_get, len - 1);
                         buf[len-1] = '\0';
                         fp->buf_get_len -= len - 1;
                         for(int64_t i = 0; i < fp->buf_get_len; ++i) fp->buf_get[i] = *(fp->buf_get + len + i);
+                        fp->buf_get[fp->buf_get_len] = '\0';
                         rd = 1;
                     }
                 }else if(fp->buf_get_len >= len){
@@ -372,23 +378,36 @@ char* gzgets(gzFile fp, char *buf, int len)
                     buf[len-1] = '\0';
                     fp->buf_get_len -= len - 1;
                     for(int64_t i = 0; i < fp->buf_get_len; ++i) fp->buf_get[i] = *(fp->buf_get + len + i);
+                    fp->buf_get[fp->buf_get_len] = '\0';
                     rd = 1;
                 }else{
                     if(gzeof(fp)){
                         memcpy(buf, fp->buf_get, fp->buf_get_len);
                         buf[fp->buf_get_len] = '\0';
                         fp->buf_get_len = 0;
+                        fp->buf_get[0] = '\0';
                         rd = 1;
                     }else{
-                        fp->buf_get_len += gzread(fp, fp->buf_get + fp->buf_get_len, fp->buf_get_size - fp->buf_get_len);
+                        int rlen = gzread(fp, fp->buf_get + fp->buf_get_len, fp->buf_get_size - fp->buf_get_len - 1);
+                        if(rlen <= 0){
+                            memcpy(buf, fp->buf_get, fp->buf_get_len);
+                            buf[fp->buf_get_len] = '\0';
+                            fp->buf_get_len = 0;
+                            fp->buf_get[0] = '\0';
+                            rd = 1;
+                        }else{
+                            fp->buf_get_len += rlen;
+                            fp->buf_get[fp->buf_get_len] = '\0';
+                        }
                     }
                 }
             }else{
                 if(gzeof(fp)){
                     return NULL;
                 }else{
-                    fp->buf_get_len = gzread(fp, fp->buf_get, fp->buf_get_size);
+                    fp->buf_get_len = gzread(fp, fp->buf_get, fp->buf_get_size - 1);
                     if(fp->buf_get_len <= 0) return NULL;
+                    else fp->buf_get[fp->buf_get_len] = '\0';
                 }
             }
         }while(!rd);
