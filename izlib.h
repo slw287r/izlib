@@ -356,8 +356,10 @@ char* gzgets(gzFile fp, char *buf, int len)
         }
         uint8_t rd = 0;
         char* pn = NULL;
+        int xlen = 0;
         do{
-            if(fp->buf_get_len - fp->buf_get_out > 0){
+            xlen = fp->buf_get_len - fp->buf_get_out;
+            if(xlen > 0){
                 char* fbo = fp->buf_get + fp->buf_get_out;
                 if((pn = strchr(fbo, '\n'))){
                     if(pn - fbo < len - 1){
@@ -371,21 +373,19 @@ char* gzgets(gzFile fp, char *buf, int len)
                         fp->buf_get_out += len - 1;
                         rd = 1;
                     }
-                }else if(fp->buf_get_len - fp->buf_get_out >= len - 1){
+                }else if(xlen >= len - 1){
                     memcpy(buf, fbo, len - 1);
                     buf[len-1] = '\0';
                     fp->buf_get_out += len - 1;
                     rd = 1;
                 }else{
                     if(gzeof(fp)){
-                        int xlen = fp->buf_get_len-fp->buf_get_out;
                         memcpy(buf, fbo, xlen);
                         buf[xlen] = '\0';
                         fp->buf_get_len = 0;
                         fp->buf_get_out = 0;
                         rd = 1;
                     }else{
-                        int xlen = fp->buf_get_len-fp->buf_get_out;
                         memcpy(buf, fbo, xlen);
                         fp->buf_get_len = 0;
                         fp->buf_get_out = 0;
@@ -394,11 +394,11 @@ char* gzgets(gzFile fp, char *buf, int len)
                             buf[xlen] = '\0';
                             rd = 1;
                         }else{
-                            pn = strchr(buf, '\n');
+                            pn = strchr(buf + xlen, '\n');
                             if(pn){
                                 fp->buf_get_len = xlen + rlen - (pn - buf + 1);
                                 memcpy(fp->buf_get, pn + 1, fp->buf_get_len);
-                                fp->buf_get_len[fp->buf_get] = '\0';
+                                fp->buf_get[fp->buf_get_len] = '\0';
                                 fp->buf_get_out = 0;
                                 *(pn+1) = '\0';
                                 rd = 1;
@@ -414,8 +414,9 @@ char* gzgets(gzFile fp, char *buf, int len)
                     return NULL;
                 }else{
                     int rlen = gzread(fp, buf, len - 1);
-                    if(rlen <= 0) return NULL;
-                    else{
+                    if(rlen <= 0){
+                        return NULL;
+                    }else{
                         pn = strchr(buf, '\n');
                         if(pn){
                             fp->buf_get_len = rlen - (pn - buf + 1);
@@ -423,6 +424,9 @@ char* gzgets(gzFile fp, char *buf, int len)
                             fp->buf_get[fp->buf_get_len] = '\0';
                             fp->buf_get_out = 0;
                             *(pn+1) = '\0';
+                            rd = 1;
+                        }else{
+                            buf[rlen] = '\0';
                             rd = 1;
                         }
                     }
