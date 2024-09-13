@@ -32,10 +32,48 @@ time seqtk seq -FE toy.fq.gz > /dev/null
 |-------|-------------|------------|--------------------|
 | Runtime  |  1m18.050s  |  0m23.648s | 3.3×  |
 
-## Caveats
-~~Isa-l's `igzip` program sometimes complains about big concatenated gzip file. I'm not sure whether the issue resists in the above API. **Use at your own risk**.~~
+## Examples
 
-**igzip (version 2.30.0) compiled with newer gcc (gcc version 11.2.1 on my end) works without the aforementioned issue**.
+<details>
+<summary>Read lines of gzipped or plain file using kstring and izlib</summary>
+* code
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include "izlib.h"
+#include "kstring.h"
+
+// alias to gzgets with input order swapped
+char *kzgets(char *buf, int siz, gzFile fp) { return gzgets(fp, buf, siz); }
+
+int main(int argc, char *argv[])
+{
+        kstring_t ks = {0, 0, 0};
+        gzFile fp = gzopen(argv[1], "r");
+        if (!fp)
+        {
+                fprintf(stderr, "Error openning file [%s]\n", argv[1]);
+                exit(EXIT_FAILURE);
+        }
+        while (kgetline(&ks, (kgets_func *)kzgets, fp) == 0)
+        {
+                puts(ks.s);
+                ks.l = 0;
+        }
+        if (ks.m)
+                free(ks.s);
+        gzclose(fp);
+}
+```
+
+* Compile
+```
+cc -o a a.c kstring.c -lisal
+```
+
+</details>
+
+
 
 ## Credits
 <a href="http://github.com/wulj2" target="_blank"><img src="https://avatars.githubusercontent.com/u/37930892?v=4" alt="@wulj2" size="32" height="32" width="32" data-view-component="true" class="avatar circle"></a>
