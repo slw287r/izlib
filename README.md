@@ -36,7 +36,9 @@ time seqtk seq -FE toy.fq.gz > /dev/null
 
 <details>
 <summary>Read lines of gzipped or plain file using kstring and izlib</summary>
+
 * code
+
 ```c
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,8 +69,15 @@ int main(int argc, char *argv[])
 ```
 
 * Compile
+
 ```
 cc -o a a.c kstring.c -lisal
+```
+
+* Run
+
+```
+time ./a in.gz | wc -l
 ```
 
 </details>
