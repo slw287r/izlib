@@ -414,6 +414,8 @@ char* gzgets(gzFile fp, char *buf, int len)
 					}
 					else
 					{
+                                                buf[xlen+rlen] = '\0';
+                                                rd = 1;
 						pn = strchr(buf + xlen, '\n');
 						if (pn)
 						{
@@ -422,12 +424,6 @@ char* gzgets(gzFile fp, char *buf, int len)
 							fp->buf_get[fp->buf_get_len] = '\0';
 							fp->buf_get_out = 0;
 							*(pn + 1) = '\0';
-							rd = 1;
-						}
-						else
-						{
-							buf[xlen + rlen] = '\0';
-							rd = 1;
 						}
 					}
 				}
@@ -444,6 +440,8 @@ char* gzgets(gzFile fp, char *buf, int len)
 					return NULL;
 				else
 				{
+                                        buf[rlen] = '\0';
+                                        rd = 1;
 					pn = strchr(buf, '\n');
 					if (pn)
 					{
@@ -452,12 +450,6 @@ char* gzgets(gzFile fp, char *buf, int len)
 						fp->buf_get[fp->buf_get_len] = '\0';
 						fp->buf_get_out = 0;
 						*(pn + 1) = '\0';
-						rd = 1;
-					}
-					else
-					{
-						buf[rlen] = '\0';
-						rd = 1;
 					}
 				}
 			}
