@@ -45,7 +45,7 @@ const int com_lvls[4] = {
 typedef struct
 {
 	FILE *fp;
-        int fd;
+	int fd;
 	char *mode;
 	int is_plain;
 	struct isal_gzip_header *gzip_header;
@@ -55,10 +55,10 @@ typedef struct
 	size_t buf_in_size;
 	uint8_t *buf_out;
 	size_t buf_out_size;
-        char *buf_get;
-        size_t buf_get_size;
-        int64_t buf_get_len;
-        int64_t buf_get_out;
+	char *buf_get;
+	size_t buf_get_size;
+	int64_t buf_get_len;
+	int64_t buf_get_out;
 } gzFile_t;
 
 typedef gzFile_t* gzFile;
@@ -87,15 +87,15 @@ inline void gzclose(gzFile fp);
 
 int is_gz(FILE* fp)
 {
-	if(!fp) return 0;
+	if (!fp) return 0;
 	char buf[2];
 	int gzip = 0;
-	if(fread(buf, 1, 2, fp) == 2)
-		if(((int)buf[0] == 0x1f) && ((int)(buf[1]&0xFF) == 0x8b))
+	if (fread(buf, 1, 2, fp) == 2)
+		if (((int)buf[0] == 0x1f) && ((int)(buf[1]&0xFF) == 0x8b))
 			gzip = 1; // normal gzip
 	fseek(fp, 12, SEEK_SET);
-	if(fread(buf, 1, 2, fp) == 2)
-		if(gzip == 1 && (int)buf[0] == 0x42 && (int)(buf[1]&0xFF) == 0x43)
+	if (fread(buf, 1, 2, fp) == 2)
+		if (gzip == 1 && (int)buf[0] == 0x42 && (int)(buf[1]&0xFF) == 0x43)
 			gzip = 2; // bgzf format, need to require the normal gzip header
 	fseek(fp, 0, SEEK_SET);
 	return gzip;
@@ -104,7 +104,7 @@ int is_gz(FILE* fp)
 int is_plain(FILE* fp)
 {
 	int r = 0;
-	if(!feof(fp))
+	if (!feof(fp))
 	{
 		int c = getc(fp);
 		r = isprint(c);
@@ -134,22 +134,24 @@ int ingest_gzip_header(gzFile fp) {
 gzFile gzopen(const char *in, const char *mode)
 {
 	gzFile fp = (gzFile_t *)calloc(1, sizeof(gzFile_t));
-        if(*mode == 'r') fp->fd = open(in, O_RDONLY);
-        else if(*mode == 'w') fp->fd = open(in, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
-        if(fp->fd < 0)
-        {
-                gzclose(fp);
-                return NULL;
-        }
+	if (*mode == 'r')
+		fp->fd = open(in, O_RDONLY);
+	else if (*mode == 'w')
+		fp->fd = open(in, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+	if (fp->fd < 0)
+	{
+		gzclose(fp);
+		return NULL;
+	}
 	fp->fp = fdopen(fp->fd, mode);
-	if(!fp->fp)
+	if (!fp->fp)
 	{
 		gzclose(fp);
 		return NULL;
 	}
 	fp->mode = strdup(mode);
 	// plain file
-	if(*mode == 'r' && (fp->is_plain = !is_gz(fp->fp)))
+	if (*mode == 'r' && (fp->is_plain = !is_gz(fp->fp)))
 		return fp;
 	// gz file
 	fp->gzip_header = (struct isal_gzip_header *)calloc(1, sizeof(struct isal_gzip_header));
@@ -159,8 +161,8 @@ gzFile gzopen(const char *in, const char *mode)
 		fp->state = (struct inflate_state *)calloc(1, sizeof(struct inflate_state));
 		fp->buf_in_size = BUF_SIZE;
 		fp->buf_in = (uint8_t *)malloc(fp->buf_in_size * sizeof(uint8_t));
-                fp->buf_get_size = BUF_SIZE;
-                fp->buf_get = (char*)malloc(fp->buf_get_size * sizeof(char));
+		fp->buf_get_size = BUF_SIZE;
+		fp->buf_get = (char*)malloc(fp->buf_get_size * sizeof(char));
 		isal_inflate_init(fp->state);
 		fp->state->crc_flag = ISAL_GZIP_NO_HDR_VER;
 		fp->state->next_in = fp->buf_in;
@@ -189,7 +191,7 @@ gzFile gzopen(const char *in, const char *mode)
 		fp->zstream->gzip_flag = IGZIP_GZIP_NO_HDR;
 		fp->zstream->avail_out = fp->buf_out_size;
 		fp->zstream->next_out = fp->buf_out;
-		if(isal_write_gzip_header(fp->zstream, fp->gzip_header) != ISAL_DECOMP_OK)
+		if (isal_write_gzip_header(fp->zstream, fp->gzip_header) != ISAL_DECOMP_OK)
 		{
 			gzclose(fp);
 			return NULL;
@@ -204,15 +206,15 @@ gzFile gzdopen(int fd, const char *mode)
 	if (fd == -1)
 		return NULL;
 	gzFile fp = (gzFile_t *)calloc(1, sizeof(gzFile_t));
-        fp->fd = fd;
-	if(!(fp->fp = fdopen(fd, mode)))
+		fp->fd = fd;
+	if (!(fp->fp = fdopen(fd, mode)))
 	{
 		gzclose(fp);
 		return NULL;
 	}
 	fp->mode = strdup(mode);
 	// plain file
-	if(*mode == 'r' && (fp->is_plain = is_plain(fp->fp)))
+	if (*mode == 'r' && (fp->is_plain = is_plain(fp->fp)))
 		return fp;
 	// gz file
 	fp->gzip_header = (struct isal_gzip_header *)calloc(1, sizeof(struct isal_gzip_header));
@@ -250,7 +252,7 @@ gzFile gzdopen(int fd, const char *mode)
 		fp->zstream->gzip_flag = IGZIP_GZIP_NO_HDR;
 		fp->zstream->avail_out = fp->buf_out_size;
 		fp->zstream->next_out = fp->buf_out;
-		if(isal_write_gzip_header(fp->zstream, fp->gzip_header) != ISAL_DECOMP_OK)
+		if (isal_write_gzip_header(fp->zstream, fp->gzip_header) != ISAL_DECOMP_OK)
 		{
 			gzclose(fp);
 			return NULL;
@@ -261,26 +263,27 @@ gzFile gzdopen(int fd, const char *mode)
 
 void gzclose(gzFile fp)
 {
-	if(!fp) return;
-	if(fp->mode) free(fp->mode);
-	if(fp->zstream && fp->fp) gzwrite(fp, NULL, 0);
-	if(fp->gzip_header)
+	if (!fp) return;
+	if (fp->mode) free(fp->mode);
+	if (fp->zstream && fp->fp) gzwrite(fp, NULL, 0);
+	if (fp->gzip_header)
 	{
-		if(fp->gzip_header->extra) free(fp->gzip_header->extra);
-		if(fp->gzip_header->name) free(fp->gzip_header->name);
-		if(fp->gzip_header->comment) free(fp->gzip_header->comment);
+		if (fp->gzip_header->extra) free(fp->gzip_header->extra);
+		if (fp->gzip_header->name) free(fp->gzip_header->name);
+		if (fp->gzip_header->comment) free(fp->gzip_header->comment);
 		free(fp->gzip_header);
 	}
-	if(fp->state) free(fp->state);
-	if(fp->buf_in) free(fp->buf_in);
-        if(fp->buf_get) free(fp->buf_get);
-	if(fp->buf_out) free(fp->buf_out);
-	if(fp->zstream){
-		if(fp->zstream->level_buf) free(fp->zstream->level_buf);
+	if (fp->state) free(fp->state);
+	if (fp->buf_in) free(fp->buf_in);
+	if (fp->buf_get) free(fp->buf_get);
+	if (fp->buf_out) free(fp->buf_out);
+	if (fp->zstream)
+	{
+		if (fp->zstream->level_buf) free(fp->zstream->level_buf);
 		free(fp->zstream);
 	}
-	if(fp->fp) fclose(fp->fp);
-        if(fp->fd) close(fp->fd);
+	if (fp->fp) fclose(fp->fp);
+	if (fp->fd) close(fp->fd);
 	free(fp);
 }
 
@@ -289,7 +292,7 @@ int gzread(gzFile fp, void *buf, size_t len)
 	int buf_data_len = 0;
 	if (fp->is_plain)
 	{
-		if(!feof(fp->fp))
+		if (!feof(fp->fp))
 			buf_data_len = fread((uint8_t *)buf, 1, len, fp->fp);
 		return buf_data_len;
 	}
@@ -323,7 +326,8 @@ int gzread(gzFile fp, void *buf, size_t len)
 		isal_inflate_reset(fp->state);
 		isal_gzip_header_init(fp->gzip_header);
 		fp->state->crc_flag = ISAL_GZIP_NO_HDR_VER;
-		if (ingest_gzip_header(fp) != ISAL_DECOMP_OK) return -3; // fail to parse header
+		if (ingest_gzip_header(fp) != ISAL_DECOMP_OK)
+			return -3; // fail to parse header
 		do
 		{
 			if (!feof(fp->fp) && !fp->state->avail_in)
@@ -345,95 +349,121 @@ int gzread(gzFile fp, void *buf, size_t len)
 
 char* gzgets(gzFile fp, char *buf, int len)
 {
-        if(fp->is_plain){
-            if(!feof(fp->fp))
-                return fgets(buf, len, fp->fp);
-            return NULL;
-        }
-        if(len > fp->buf_get_size){
-            fp->buf_get_size = 2 * len;
-            fp->buf_get = (char*)realloc(fp->buf_get, 2*len*sizeof(char));
-        }
-        uint8_t rd = 0;
-        char* pn = NULL;
-        int xlen = 0;
-        do{
-            xlen = fp->buf_get_len - fp->buf_get_out;
-            if(xlen > 0){
-                char* fbo = fp->buf_get + fp->buf_get_out;
-                if((pn = strchr(fbo, '\n'))){
-                    if(pn - fbo < len - 1){
-                        memcpy(buf, fbo, (pn - fbo + 1)*sizeof(char));
-                        buf[pn-fbo+1] = '\0';
-                        fp->buf_get_out += pn - fbo + 1;
-                        rd = 1;
-                    }else{
-                        memcpy(buf, fbo, len - 1);
-                        buf[len-1] = '\0';
-                        fp->buf_get_out += len - 1;
-                        rd = 1;
-                    }
-                }else if(xlen >= len - 1){
-                    memcpy(buf, fbo, len - 1);
-                    buf[len-1] = '\0';
-                    fp->buf_get_out += len - 1;
-                    rd = 1;
-                }else{
-                    if(gzeof(fp)){
-                        memcpy(buf, fbo, xlen);
-                        buf[xlen] = '\0';
-                        fp->buf_get_len = 0;
-                        fp->buf_get_out = 0;
-                        rd = 1;
-                    }else{
-                        memcpy(buf, fbo, xlen);
-                        fp->buf_get_len = 0;
-                        fp->buf_get_out = 0;
-                        int rlen = gzread(fp, buf + xlen, len - xlen - 1);
-                        if(rlen <= 0){
-                            buf[xlen] = '\0';
-                            rd = 1;
-                        }else{
-                            pn = strchr(buf + xlen, '\n');
-                            if(pn){
-                                fp->buf_get_len = xlen + rlen - (pn - buf + 1);
-                                memcpy(fp->buf_get, pn + 1, fp->buf_get_len);
-                                fp->buf_get[fp->buf_get_len] = '\0';
-                                fp->buf_get_out = 0;
-                                *(pn+1) = '\0';
-                                rd = 1;
-                            }else{
-                                buf[xlen+rlen] = '\0';
-                                rd = 1;
-                            }
-                        }
-                    }
-                }
-            }else{
-                if(gzeof(fp)){
-                    return NULL;
-                }else{
-                    int rlen = gzread(fp, buf, len - 1);
-                    if(rlen <= 0){
-                        return NULL;
-                    }else{
-                        pn = strchr(buf, '\n');
-                        if(pn){
-                            fp->buf_get_len = rlen - (pn - buf + 1);
-                            memcpy(fp->buf_get, pn + 1, fp->buf_get_len);
-                            fp->buf_get[fp->buf_get_len] = '\0';
-                            fp->buf_get_out = 0;
-                            *(pn+1) = '\0';
-                            rd = 1;
-                        }else{
-                            buf[rlen] = '\0';
-                            rd = 1;
-                        }
-                    }
-                }
-            }
-        }while(!rd);
-        return buf;
+	if (fp->is_plain)
+	{
+		if (!feof(fp->fp))
+			return fgets(buf, len, fp->fp);
+		return NULL;
+	}
+	if (len > fp->buf_get_size)
+	{
+		fp->buf_get_size = 2 * len;
+		fp->buf_get = (char *)realloc(fp->buf_get, 2*len*sizeof(char));
+	}
+	uint8_t rd = 0;
+	char *pn = NULL;
+	int xlen = 0;
+	do {
+		if ((xlen = fp->buf_get_len - fp->buf_get_out) > 0)
+		{
+			char* fbo = fp->buf_get + fp->buf_get_out;
+			if ((pn = strchr(fbo, '\n')))
+			{
+				if (pn - fbo < len - 1)
+				{
+					memcpy(buf, fbo, (pn - fbo + 1) * sizeof(char));
+					buf[pn - fbo + 1] = '\0';
+					fp->buf_get_out += pn - fbo + 1;
+					rd = 1;
+				}
+				else
+				{
+					memcpy(buf, fbo, len - 1);
+					buf[len - 1] = '\0';
+					fp->buf_get_out += len - 1;
+					rd = 1;
+				}
+			}
+			else if (xlen >= len - 1)
+			{
+				memcpy(buf, fbo, len - 1);
+				buf[len - 1] = '\0';
+				fp->buf_get_out += len - 1;
+				rd = 1;
+			}
+			else
+			{
+				if (gzeof(fp))
+				{
+					memcpy(buf, fbo, xlen);
+					buf[xlen] = '\0';
+					fp->buf_get_len = 0;
+					fp->buf_get_out = 0;
+					rd = 1;
+				}
+				else
+				{
+					memcpy(buf, fbo, xlen);
+					fp->buf_get_len = 0;
+					fp->buf_get_out = 0;
+					int rlen = gzread(fp, buf + xlen, len - xlen - 1);
+					if (rlen <= 0)
+					{
+						buf[xlen] = '\0';
+						rd = 1;
+					}
+					else
+					{
+						pn = strchr(buf + xlen, '\n');
+						if (pn)
+						{
+							fp->buf_get_len = xlen + rlen - (pn - buf + 1);
+							memcpy(fp->buf_get, pn + 1, fp->buf_get_len);
+							fp->buf_get[fp->buf_get_len] = '\0';
+							fp->buf_get_out = 0;
+							*(pn + 1) = '\0';
+							rd = 1;
+						}
+						else
+						{
+							buf[xlen + rlen] = '\0';
+							rd = 1;
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			if (gzeof(fp))
+				return NULL;
+			else
+			{
+				int rlen = gzread(fp, buf, len - 1);
+				if (rlen <= 0)
+					return NULL;
+				else
+				{
+					pn = strchr(buf, '\n');
+					if (pn)
+					{
+						fp->buf_get_len = rlen - (pn - buf + 1);
+						memcpy(fp->buf_get, pn + 1, fp->buf_get_len);
+						fp->buf_get[fp->buf_get_len] = '\0';
+						fp->buf_get_out = 0;
+						*(pn + 1) = '\0';
+						rd = 1;
+					}
+					else
+					{
+						buf[rlen] = '\0';
+						rd = 1;
+					}
+				}
+			}
+		}
+	} while(!rd);
+	return buf;
 }
 
 int set_compress_level(gzFile fp, int level)
@@ -458,7 +488,7 @@ int gzwrite(gzFile fp, const void *buf, size_t _len)
 	size_t len = 0;
 	do
 	{
-		if(!fp->zstream->next_out)
+		if (!fp->zstream->next_out)
 		{
 			fp->zstream->next_out = fp->buf_out;
 			fp->zstream->avail_out = fp->buf_out_size;
@@ -473,29 +503,35 @@ int gzwrite(gzFile fp, const void *buf, size_t _len)
 
 int gzputc(gzFile fp, int c)
 {
-    return gzwrite(fp, &c, 1);
+	return gzwrite(fp, &c, 1);
 }
 
 int gzputs(gzFile fp, const char *s)
 {
-    return gzwrite(fp, s, strlen(s));
+	return gzwrite(fp, s, strlen(s));
 }
 
 int gzeof(gzFile fp)
 {
-    if(!fp) return 0;
-    if(fp->mode[0] != 'w' || fp->mode[0] != 'r') return 0;
-    return fp->mode[0] == 'r' ? feof(fp->fp) : 0;
+	if (!fp)
+		return 0;
+	if (fp->mode[0] != 'w' || fp->mode[0] != 'r')
+		return 0;
+	return fp->mode[0] == 'r' ? feof(fp->fp) : 0;
 }
 
-int64_t gzoffset(gzFile fp){
-    if(!fp) return 0;
-    if(fp->mode[0] != 'w' || fp->mode[0] != 'r') return 0;
-    int64_t offset = lseek(fp->fd, 0, SEEK_CUR);
-    if(offset == -1) return -1;
-    if(fp->mode[0] == 'r')
-        offset -= fp->zstream->avail_in;
-    return offset;
+int64_t gzoffset(gzFile fp)
+{
+	if (!fp)
+		return 0;
+	if (fp->mode[0] != 'w' || fp->mode[0] != 'r')
+		return 0;
+	int64_t offset = lseek(fp->fd, 0, SEEK_CUR);
+	if (offset == -1)
+		return -1;
+	if (fp->mode[0] == 'r')
+		offset -= fp->zstream->avail_in;
+	return offset;
 }
 
 #endif
