@@ -393,66 +393,53 @@ char* gzgets(gzFile fp, char *buf, int len)
 			}
 			else
 			{
-				if (gzeof(fp))
+				memcpy(buf, fbo, xlen);
+				fp->buf_get_len = 0;
+				fp->buf_get_out = 0;
+				int rlen = gzread(fp, buf + xlen, len - xlen - 1);
+				if (rlen <= 0)
 				{
-					memcpy(buf, fbo, xlen);
 					buf[xlen] = '\0';
-					fp->buf_get_len = 0;
-					fp->buf_get_out = 0;
 					rd = 1;
 				}
 				else
 				{
-					memcpy(buf, fbo, xlen);
-					fp->buf_get_len = 0;
-					fp->buf_get_out = 0;
-					int rlen = gzread(fp, buf + xlen, len - xlen - 1);
-					if (rlen <= 0)
-					{
-						buf[xlen] = '\0';
-						rd = 1;
-					}
-					else
-					{
-                                                buf[xlen+rlen] = '\0';
-                                                rd = 1;
-						pn = strchr(buf + xlen, '\n');
-						if (pn)
-						{
-							fp->buf_get_len = xlen + rlen - (pn - buf + 1);
-							memcpy(fp->buf_get, pn + 1, fp->buf_get_len);
-							fp->buf_get[fp->buf_get_len] = '\0';
-							fp->buf_get_out = 0;
-							*(pn + 1) = '\0';
-						}
-					}
-				}
-			}
-		}
-		else
-		{
-			if (gzeof(fp))
-				return NULL;
-			else
-			{
-				int rlen = gzread(fp, buf, len - 1);
-				if (rlen <= 0)
-					return NULL;
-				else
-				{
-                                        buf[rlen] = '\0';
-                                        rd = 1;
-					pn = strchr(buf, '\n');
+					buf[xlen+rlen] = '\0';
+					rd = 1;
+					pn = strchr(buf + xlen, '\n');
 					if (pn)
 					{
-						fp->buf_get_len = rlen - (pn - buf + 1);
+						fp->buf_get_len = xlen + rlen - (pn - buf + 1);
 						memcpy(fp->buf_get, pn + 1, fp->buf_get_len);
 						fp->buf_get[fp->buf_get_len] = '\0';
 						fp->buf_get_out = 0;
 						*(pn + 1) = '\0';
 					}
 				}
+			       
 			}
+		}
+		else
+		{
+			
+			int rlen = gzread(fp, buf, len - 1);
+			if (rlen <= 0)
+				return NULL;
+			else
+			{
+				buf[rlen] = '\0';
+				rd = 1;
+				pn = strchr(buf, '\n');
+				if (pn)
+				{
+					fp->buf_get_len = rlen - (pn - buf + 1);
+					memcpy(fp->buf_get, pn + 1, fp->buf_get_len);
+					fp->buf_get[fp->buf_get_len] = '\0';
+					fp->buf_get_out = 0;
+					*(pn + 1) = '\0';
+				}
+			}
+			
 		}
 	} while(!rd);
 	return buf;
