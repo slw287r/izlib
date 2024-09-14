@@ -507,8 +507,6 @@ int gzeof(gzFile fp)
 {
 	if (!fp)
 		return 0;
-	if (fp->mode[0] != 'w' || fp->mode[0] != 'r')
-		return 0;
 	return fp->mode[0] == 'r' ? feof(fp->fp) : 0;
 }
 
@@ -516,14 +514,12 @@ int64_t gzoffset(gzFile fp)
 {
 	if (!fp)
 		return 0;
-	if (fp->mode[0] != 'w' || fp->mode[0] != 'r')
+	if (fp->mode[0] == 'w')
+		return lseek(fp->fd, 0, SEEK_CUR);
+	else if (fp->mode[0] == 'r')
+		return lseek(fp->fd, 0, SEEK_CUR) - fp->state->avail_in;
+	else
 		return 0;
-	int64_t offset = lseek(fp->fd, 0, SEEK_CUR);
-	if (offset == -1)
-		return -1;
-	if (fp->mode[0] == 'r')
-		offset -= fp->zstream->avail_in;
-	return offset;
 }
 
 #endif
