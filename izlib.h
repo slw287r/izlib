@@ -11,6 +11,19 @@
 #include <sys/stat.h>
 #include "igzip_lib.h"
 
+// exported from zlib.h
+#ifndef Z_OK
+#define Z_OK            0
+#endif
+
+#ifndef Z_ERRNO
+#define Z_ERRNO        (-1)
+#endif
+
+#ifndef Z_STREAM_ERROR
+#define Z_STREAM_ERROR (-2)
+#endif
+
 #ifndef UNIX
 #define UNIX 3
 #endif
@@ -80,7 +93,7 @@ inline int gzputs(gzFile fp, const char *s);
 inline int gzeof(gzFile fp);
 inline int64_t gzoffset(gzFile fp);
 inline int set_compress_level(gzFile fp, int level);
-inline void gzclose(gzFile fp);
+inline int gzclose(gzFile fp);
 #ifdef __cplusplus
 }
 #endif
@@ -261,9 +274,11 @@ gzFile gzdopen(int fd, const char *mode)
 	return fp;
 }
 
-void gzclose(gzFile fp)
+int gzclose(gzFile fp)
 {
-	if (!fp) return;
+	int ret = Z_OK;
+	if (!fp) return Z_STREAM_ERROR;
+	if (fp->mode && fp->mode[0] != 'r' && fp->mode[0] != 'w') return Z_STREAM_ERROR;
 	if (fp->mode) free(fp->mode);
 	if (fp->zstream && fp->fp) gzwrite(fp, NULL, 0);
 	if (fp->gzip_header)
@@ -282,9 +297,10 @@ void gzclose(gzFile fp)
 		if (fp->zstream->level_buf) free(fp->zstream->level_buf);
 		free(fp->zstream);
 	}
-	if (fp->fp) fclose(fp->fp);
-	if (fp->fd) close(fp->fd);
+	if (fp->fp && fclose(fp->fp)) ret = Z_ERRNO;
+	if (fp->fd && close(fp->fd)) ret = Z_ERRNO;
 	free(fp);
+	return ret;
 }
 
 int gzread(gzFile fp, void *buf, size_t len)
@@ -360,7 +376,6 @@ char* gzgets(gzFile fp, char *buf, int len)
 		fp->buf_get_size = 2 * len;
 		fp->buf_get = (char *)realloc(fp->buf_get, 2*len*sizeof(char));
 	}
-	uint8_t rd = 0;
 	char *pn = NULL;
 	int xlen = 0;
 	do {
@@ -374,14 +389,14 @@ char* gzgets(gzFile fp, char *buf, int len)
 					memcpy(buf, fbo, (pn - fbo + 1) * sizeof(char));
 					buf[pn - fbo + 1] = '\0';
 					fp->buf_get_out += pn - fbo + 1;
-					rd = 1;
+					return buf;
 				}
 				else
 				{
 					memcpy(buf, fbo, len - 1);
 					buf[len - 1] = '\0';
 					fp->buf_get_out += len - 1;
-					rd = 1;
+					return buf;
 				}
 			}
 			else if (xlen >= len - 1)
@@ -389,7 +404,7 @@ char* gzgets(gzFile fp, char *buf, int len)
 				memcpy(buf, fbo, len - 1);
 				buf[len - 1] = '\0';
 				fp->buf_get_out += len - 1;
-				rd = 1;
+				return buf;
 			}
 			else
 			{
@@ -400,12 +415,10 @@ char* gzgets(gzFile fp, char *buf, int len)
 				if (rlen <= 0)
 				{
 					buf[xlen] = '\0';
-					rd = 1;
 				}
 				else
 				{
 					buf[xlen+rlen] = '\0';
-					rd = 1;
 					pn = strchr(buf + xlen, '\n');
 					if (pn)
 					{
@@ -416,6 +429,7 @@ char* gzgets(gzFile fp, char *buf, int len)
 						*(pn + 1) = '\0';
 					}
 				}
+				return buf;
 			       
 			}
 		}
@@ -428,7 +442,6 @@ char* gzgets(gzFile fp, char *buf, int len)
 			else
 			{
 				buf[rlen] = '\0';
-				rd = 1;
 				pn = strchr(buf, '\n');
 				if (pn)
 				{
@@ -438,11 +451,11 @@ char* gzgets(gzFile fp, char *buf, int len)
 					fp->buf_get_out = 0;
 					*(pn + 1) = '\0';
 				}
+				return buf;
 			}
 			
 		}
-	} while(!rd);
-	return buf;
+	} while(1);
 }
 
 int set_compress_level(gzFile fp, int level)
