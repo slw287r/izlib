@@ -88,6 +88,7 @@ inline gzFile gzdopen(int fd, const char *mode);
 inline int gzread(gzFile fp, void *buf, size_t len);
 inline char* gzgets(gzFile fp, char *buf, int len);
 inline int gzwrite(gzFile fp, const void *buf, size_t len);
+inline int gzprintf(gzFile fp, const char *format, ...);
 inline int gzputc(gzFile fp, int c);
 inline int gzputs(gzFile fp, const char *s);
 inline int gzeof(gzFile fp);
@@ -491,6 +492,24 @@ int gzwrite(gzFile fp, const void *buf, size_t _len)
 		fp->zstream->next_out = NULL;
 	} while (!fp->zstream->avail_out);
 	return len;
+}
+
+int gzprintf(gzFile fp, const char *format, ...)
+{
+    if (!fp || !fp->mode || *fp->mode != 'w') return -1;
+    va_list args;
+    va_start(args, format);
+    int len = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+    if (len < 0) return -1;
+    char *buffer = (char *)malloc(len + 1);
+    if (!buffer) return -1;
+    va_start(args, format);
+    vsnprintf(buffer, len + 1, format, args);
+    va_end(args);
+    len = gzwrite(fp, buffer, len);    
+    free(buffer);    
+    return len;
 }
 
 int gzputc(gzFile fp, int c)
